@@ -52,10 +52,11 @@ RUN mkdir -p /usr/local/share/npm-global && \
 
 ARG USERNAME=node
 
-# Persist bash history across container rebuilds (mounted named volume in
-# devcontainer.json).
-RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
-  && mkdir /commandhistory \
+# Persist bash/zsh history across container rebuilds (mounted named volume
+# in devcontainer.json). zsh's PROMPT_COMMAND + HISTFILE hook is set by
+# the zsh-in-docker step below; bash users can add the equivalent to
+# ~/.bashrc inside the container if they prefer bash.
+RUN mkdir /commandhistory \
   && touch /commandhistory/.bash_history \
   && chown -R $USERNAME /commandhistory
 

@@ -1,0 +1,17 @@
+# Hadolint config for this template.
+#
+# Rules we deliberately ignore:
+#
+# DL3008: "Pin versions in apt-get install." Devcontainer base images
+#   should track the latest security updates of the distro; pinning
+#   every apt package would make the image stale within weeks and
+#   force frequent maintenance for no real benefit.
+#
+# DL3047: "Avoid use of wget without progress bar." Informational level
+#   only; not an error and nothing to do with Dockerfile correctness.
+
+ignored:
+  - DL3008
+  - DL3047
+
+failure-threshold: warning
