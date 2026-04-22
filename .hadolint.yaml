@@ -9,9 +9,14 @@
 #
 # DL3047: "Avoid use of wget without progress bar." Informational level
 #   only; not an error and nothing to do with Dockerfile correctness.
+#
+# DL4001: "Either use Wget or Curl but not both." Stylistic only. We use
+#   both deliberately — curl for release-binary downloads (gh CLI),
+#   wget for install scripts that pipe to sh (zsh-in-docker).
 
 ignored:
   - DL3008
   - DL3047
+  - DL4001
 
 failure-threshold: warning

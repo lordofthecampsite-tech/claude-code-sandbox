@@ -32,7 +32,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   man-db \
   unzip \
   gnupg2 \
-  gh \
   iptables \
   ipset \
   iproute2 \
@@ -45,6 +44,18 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   curl \
   wget \
   ca-certificates
+
+# GitHub CLI (gh) — installed from its release tarball, not apt. The
+# package exists only in debian-backports which requires a separate
+# source enablement; fetching the release binary directly is simpler
+# and pins the version explicitly. Used by /setup for the optional
+# `gh repo create` final step on GitHub projects.
+ARG GH_CLI_VERSION=2.63.2
+RUN ARCH=$(dpkg --print-architecture) && \
+  curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_${ARCH}.tar.gz" -o /tmp/gh.tar.gz && \
+  tar -xzf /tmp/gh.tar.gz -C /tmp && \
+  mv "/tmp/gh_${GH_CLI_VERSION}_linux_${ARCH}/bin/gh" /usr/local/bin/gh && \
+  rm -rf /tmp/gh.tar.gz "/tmp/gh_${GH_CLI_VERSION}_linux_${ARCH}"
 
 # Global npm prefix owned by the node user.
 RUN mkdir -p /usr/local/share/npm-global && \
