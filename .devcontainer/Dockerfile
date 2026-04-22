@@ -18,6 +18,16 @@ ENV TZ="$TZ"
 
 ARG CLAUDE_CODE_VERSION=latest
 
+# Switch apt sources to HTTPS. The node:20 base image ships sources that
+# use http://deb.debian.org, which fails on networks that block outbound
+# port 80 (corporate proxies, cellular tethering like T-Mobile, some ISPs,
+# security tools that filter unencrypted HTTP). Debian mirrors serve the
+# same content over HTTPS on port 443, so just rewriting the scheme makes
+# the build work on any network that allows general web browsing. TLS on
+# top of the already-signed apt packages is strictly better anyway.
+RUN find /etc/apt \( -name '*.sources' -o -name '*.list' \) \
+  -exec sed -i 's|http://deb.debian.org|https://deb.debian.org|g' {} +
+
 # Basic development tools + the firewall toolchain (iptables/ipset/dnsmasq).
 # BuildKit cache mounts keep apt downloads across rebuilds.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
