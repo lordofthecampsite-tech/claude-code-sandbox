@@ -113,6 +113,27 @@ Delete any of the three if you don't want them. I strongly suggest keeping the H
 
 ---
 
+## HANDOFF.md vs `claude --resume` vs `claude --continue`
+
+Three tools, three jobs. They're complementary, not competing. Most people learning Claude Code find out about `--continue` / `--resume` later than they should — worth knowing all three up front.
+
+| You just... | Use | Why |
+|---|---|---|
+| ...**crashed** — terminal died, VS Code closed mid-session, container rebuilt, Mac decided to reboot | `claude --continue` | Reloads the most recent conversation in this project at full fidelity. Fastest crash recovery — no state lost that Claude Code still has on disk. |
+| ...want to jump back into a **specific earlier thread** from a previous day (e.g. "continue the auth refactor, not the migration one") | `claude --resume` | Picks from a list of past sessions. Useful when you've had multiple parallel threads in the same project. |
+| ...are **returning after an evening, a weekend, or several days**, OR working **from a different machine** | Read `HANDOFF.md` first, then start fresh | HANDOFF is a 200-line curated snapshot of where things stand. Cheaper and clearer to re-enter from than rehydrating an hours-old conversation, and it works on any machine — `--resume` only works where the original session's JSONL lives. |
+
+**Why HANDOFF doesn't go away just because `--resume` exists:**
+
+- **Compaction eats detail.** Long sessions auto-compact, which summarizes early turns. `--resume` on a compacted session loads the *summary*, not the raw turns — the detail is permanently gone. The PreCompact hook in this template writes HANDOFF *before* the compactor runs, so the critical state survives.
+- **Machine-portable.** HANDOFF can live in the repo (it's gitignored by default — one line to change if you want it committed); `--resume` only works on the machine where the conversation happened.
+- **Humans read it too.** HANDOFF is a resume-ready doc for a teammate, a code-review reader, or future-you. `--resume` is Claude-readable only.
+- **Curation removes mess.** If a previous session went sideways, `--resume` reloads the confused state. HANDOFF is your curated correction — "here's where things actually ended up."
+
+**Rule of thumb:** `--continue` for same-day recovery. HANDOFF for anything with a meaningful gap or a move to a new machine. `--resume` when you specifically want to rehydrate an older thread rather than the most recent.
+
+---
+
 ## Extending the firewall
 
 Add a hostname to `ALLOWED_DOMAINS` in `.devcontainer/init-firewall.sh`:
