@@ -1,0 +1,46 @@
+# Lightweight CI for the template itself.
+#
+# Runs on every push + PR. Catches the two most common ways a template like
+# this breaks: a syntax error in init-firewall.sh, or malformed JSON in the
+# Claude Code settings/command files.
+#
+# If you import this template into BitBucket or GitLab, this workflow won't
+# run (it's GitHub-specific). See bitbucket-pipelines.yml.example for the
+# equivalent, or just delete this file — it's only checking the template
+# scaffolding itself, not your project code.
+
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bash syntax check
+        run: |
+          find . -name '*.sh' -print0 | xargs -0 -I {} bash -n {}
+
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          find . -name '*.sh' -print0 | xargs -0 shellcheck -S warning
+
+      - name: JSON validity (strict JSON only — devcontainer.json is JSONC)
+        run: |
+          find . -name '*.json' \
+            -not -path './node_modules/*' \
+            -not -path './.devcontainer/*' \
+            -print0 \
+            | xargs -0 -I {} sh -c 'python3 -m json.tool "$1" > /dev/null' _ {}
+
+      - name: Dockerfile sanity (hadolint)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: .devcontainer/Dockerfile
+          failure-threshold: warning

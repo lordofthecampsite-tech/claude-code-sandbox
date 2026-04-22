@@ -1,0 +1,31 @@
+# BitBucket Pipelines equivalent of .github/workflows/ci.yml.
+#
+# To enable: rename this file to bitbucket-pipelines.yml. BitBucket auto-detects
+# it and runs pipelines on push (paid feature on most plans, free tier includes
+# 50 minutes/month).
+#
+# Does the same four checks as the GitHub Actions workflow: bash syntax,
+# shellcheck, JSON validity, hadolint.
+
+image: atlassian/default-image:4
+
+pipelines:
+  default:
+    - step:
+        name: Lint
+        script:
+          # bash syntax check
+          - find . -name '*.sh' -print0 | xargs -0 -I {} bash -n {}
+
+          # shellcheck
+          - apt-get update -qq && apt-get install -y -qq shellcheck
+          - find . -name '*.sh' -print0 | xargs -0 shellcheck -S warning
+
+          # JSON validity (devcontainer.json is JSONC, excluded)
+          - find . -name '*.json' -not -path './node_modules/*' -not -path './.devcontainer/*' -print0 | xargs -0 -I {} sh -c 'python3 -m json.tool "$1" > /dev/null' _ {}
+
+          # hadolint for Dockerfile
+          - apt-get install -y -qq wget
+          - wget -q -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+          - chmod +x /usr/local/bin/hadolint
+          - hadolint --failure-threshold warning .devcontainer/Dockerfile

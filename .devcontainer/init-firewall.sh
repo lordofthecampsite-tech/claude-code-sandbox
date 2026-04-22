@@ -56,6 +56,12 @@ ALLOWED_DOMAINS=(
     codeload.github.com
     ghcr.io
 
+    # ----- BitBucket (git push/pull over HTTPS for BB-hosted repos) -----
+    bitbucket.org
+    api.bitbucket.org
+    bbuseruploads.s3.amazonaws.com
+    secure.bitbucket.org
+
     # ----- npm (required for any node-based project) -----
     registry.npmjs.org
 
@@ -70,6 +76,10 @@ ALLOWED_DOMAINS=(
     # Examples — delete or replace for your project. These are NOT active by
     # default; uncomment the ones you need or add your own.
     # ========================================================================
+
+    # ----- Example: GitLab -----
+    # gitlab.com
+    # gitlab-static.net
 
     # ----- Example: Vercel deploy target -----
     # vercel.com

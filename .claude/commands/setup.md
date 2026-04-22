@@ -8,17 +8,19 @@ You are helping the user customize the `claude-code-sandbox` template for their 
 
 ## Flow
 
-**Ask questions one at a time, waiting for the user's reply before moving to the next.** Do NOT dump all five questions at once — that produces shallow answers. Keep each question short.
+**Ask questions one at a time, waiting for the user's reply before moving to the next.** Do NOT dump all six questions at once — that produces shallow answers. Keep each question short.
 
 1. "What are you building? One sentence is fine — a web app, a CLI, firmware for an ESP32, a data pipeline, etc."
 
-2. "Where does it run in production? Vercel / Fly / AWS / Cloudflare / none / something else?"
+2. "Where will you push this code? GitHub, BitBucket, GitLab, self-hosted Gitea, or somewhere else?" The answer affects the firewall (all three big hosts are already in the default allowlist, so usually no edit needed) AND the final push step.
 
-3. "What backend services will you call? Databases, APIs, auth providers, payment, LLM providers. Name them; I'll translate to firewall domains."
+3. "Where does it run in production? Vercel / Fly / AWS / Cloudflare / none / something else?"
 
-4. "Which language toolchain(s) do you want preinstalled in the container? Node is already there. Python, Go, Rust, Arduino, or none-needed are the usual answers."
+4. "What backend services will you call? Databases, APIs, auth providers, payment, LLM providers. Name them; I'll translate to firewall domains."
 
-5. "Anything unusual about the network? The most common extra is 'yes, the container needs to reach $service-on-my-LAN at 192.168.x.x' — otherwise say no."
+5. "Which language toolchain(s) do you want preinstalled in the container? Node is already there. Python, Go, Rust, Arduino, or none-needed are the usual answers."
+
+6. "Anything unusual about the network? The most common extra is 'yes, the container needs to reach $service-on-my-LAN at 192.168.x.x' — otherwise say no."
 
 If the user is vague on any answer, ask a clarifying follow-up. Don't guess.
 
@@ -26,7 +28,7 @@ If the user is vague on any answer, ask a clarifying follow-up. Don't guess.
 
 Propose a unified set of edits and show the user a diff **before making any changes**:
 
-- **`.devcontainer/init-firewall.sh`**: append domains to `ALLOWED_DOMAINS` for the deploy target (Q2) and backend services (Q3). Use comments above the new entries grouping them by purpose. If Q5 mentioned a LAN, uncomment the `LAN_NETWORK` block near the bottom and set the subnet.
+- **`.devcontainer/init-firewall.sh`**: append domains to `ALLOWED_DOMAINS` for the deploy target (Q3) and backend services (Q4). Use comments above the new entries grouping them by purpose. If Q6 mentioned a LAN, uncomment the `LAN_NETWORK` block near the bottom and set the subnet. The git host (Q2) is almost always already covered — GitHub and BitBucket are baseline defaults; GitLab needs two lines uncommented from the Examples section; self-hosted needs the user's git server hostname added.
 
 - **`.devcontainer/Dockerfile`**: if Q4 needs a toolchain, uncomment the matching "Example" section (or add a new install block if none match). Place it above the Claude Code install so cache-invalidation order stays reasonable.
 
@@ -46,7 +48,15 @@ After edits are applied and confirmed:
 
 1. `git add -A && git commit -m "Configure sandbox for <project name from Q1>"`.
 
-2. Check `gh auth status`. If the user is authenticated AND they want to push, run `gh repo create <name> --private --source=. --push`. Ask for the repo name; default to the parent directory name. If `gh auth status` fails, skip this step and tell the user "Run `gh auth login` then `gh repo create <name> --private --source=. --push` when ready."
+2. Push. Branch on the answer to Q2:
+
+   - **GitHub**: check `gh auth status`. If authenticated AND the user wants to push, run `gh repo create <name> --private --source=. --push`. Ask for the repo name; default to the parent directory name. If `gh auth status` fails, skip and tell the user `gh auth login` then rerun.
+
+   - **BitBucket**: no equivalent auto-create CLI ships in this image. Tell the user: "Create an empty repo in BitBucket at https://bitbucket.org/repo/create, then paste the HTTPS clone URL back here and I'll wire up the remote and push." After they paste the URL, run `git remote add origin <url> && git push -u origin main`. If the remote already exists (e.g. they cloned from this template over HTTPS and kept the .git dir), use `git remote set-url origin <url>` instead.
+
+   - **GitLab**: same pattern as BitBucket. Direct them to https://gitlab.com/projects/new or their self-hosted instance's equivalent. Then `git remote add origin <url> && git push -u origin main`.
+
+   - **Self-hosted / other**: just ask for the remote URL and run `git remote add origin <url> && git push -u origin main`.
 
 ## Rules
 

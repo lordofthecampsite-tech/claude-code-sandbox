@@ -28,19 +28,41 @@ Everything is text files. No hidden magic. You can read and edit any of it.
 
 ## 5-minute quickstart
 
+Pick whichever host you're using — the template works identically on all three.
+
+### Option A: GitHub (fastest if your project is also on GitHub)
 ```bash
-# 1. Use this template on GitHub (green "Use this template" button), or clone:
 gh repo create my-project --template <owner>/claude-code-sandbox --private --clone
 cd my-project
+```
+Or click the green "Use this template" button on the repo page.
 
-# 2. Open in VS Code, then "Reopen in Container" (Dev Containers extension).
-#    First build: ~3 min. Firewall comes up automatically on start.
+### Option B: BitBucket (web-only, no CLI)
+In BitBucket: **Create** → **Repository** → scroll to "Import repository" → paste `https://github.com/<owner>/claude-code-sandbox`. Name it, set private, go. Then clone the new BB repo locally.
 
-# 3. In a container terminal:
+### Option C: Any git host (GitLab, Gitea, self-hosted, BitBucket, GitHub)
+```bash
+git clone https://github.com/<owner>/claude-code-sandbox my-project
+cd my-project
+rm -rf .git && git init -b main
+git add . && git commit -m "Initial from claude-code-sandbox template"
+# Create an empty repo in your host's UI, copy the HTTPS URL, then:
+git remote add origin <your-repo-url>
+git push -u origin main
+```
+
+### After you have the repo locally
+
+```bash
+# Open the project folder in VS Code, then "Reopen in Container"
+# (requires the Dev Containers extension). First build: ~3 min.
+# Firewall comes up automatically on start.
+
+# In a container terminal:
 claude           # launches Claude Code
 
-# 4. Inside Claude Code:
-/setup           # wizard: 5 questions, configures firewall + Dockerfile + CLAUDE.md
+# Inside Claude Code:
+/setup           # wizard: 6 questions, configures firewall + Dockerfile + CLAUDE.md
 ```
 
 That's it. You're working inside a sandbox configured for your project.
@@ -144,7 +166,7 @@ See `memory/README.md` for the frontmatter format and the four memory types.
 
 ## License
 
-_Replace this section with your preferred license. MIT is a safe default for template repos; see `LICENSE`._
+MIT. See [LICENSE](LICENSE).
 
 ---
 
