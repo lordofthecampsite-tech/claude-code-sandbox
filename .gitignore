@@ -1,0 +1,68 @@
+# ============================================================================
+# Claude Code Sandbox — default .gitignore.
+#
+# The three big categories:
+#   1. Secrets: per-user config with credentials/tokens that must not ship.
+#   2. Session state: ephemeral files from Claude Code (HANDOFF, archives).
+#   3. Build/tool noise: the usual.
+# ============================================================================
+
+# ----- Secrets / per-user config -----
+# Claude Code's project-level permission file. This accumulates allowed
+# Bash commands, and historically people paste secrets here as
+# `Bash(export TOKEN=...)` entries. Never commit.
+.claude/settings.local.json
+
+# Environment files. Keep a *.example / *.template in the repo instead.
+.env
+.env.local
+.env.*.local
+
+# Common hardware/embedded secret-bearing file.
+config.h
+
+# ----- Session state -----
+# Handoff snapshot — regenerated every session, not a log.
+HANDOFF.md
+HANDOFF*.md
+
+# Raw Claude Code session transcripts archived by the Stop/PreCompact hooks.
+# Full-fidelity local history, large, contains prompts verbatim.
+.session-archive/
+
+# ----- Staging / scratch -----
+# If you stage a downstream template or a throwaway experiment inside this
+# repo, name it with one of these prefixes to keep it out of git.
+template-staging/
+scratch-*/
+
+# ----- Build / tool noise -----
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+out/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Go
+# (Go's build output usually goes in ./bin or via `go install` — add as needed.)
+
+# Rust
+target/
+
+# Editor / OS noise
+.DS_Store
+*.swp
+.vscode/
+
+# Test scratch files
+test.txt
+*.backup
+*.backup-*

@@ -1,0 +1,37 @@
+{
+  "_comment": "Project-level Claude Code settings shipped with the template. Three hooks enforce the session-durability habits: (1) Stop blocks if HANDOFF.md is stale, forcing a resume-snapshot every session; (2) Stop archives the raw session jsonl into .session-archive/ so full-fidelity history survives; (3) PreCompact mirrors the archive and asks Claude to refresh HANDOFF.md before auto-compaction summarizes the conversation away. Delete any hook you don't want, but at least keep the HANDOFF one — it is the single most load-bearing habit in this template.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "HANDOFF=\"${CLAUDE_PROJECT_DIR:-$PWD}/HANDOFF.md\"; if [ -f \"$HANDOFF\" ]; then mtime=$(stat -c %Y \"$HANDOFF\" 2>/dev/null || stat -f %m \"$HANDOFF\" 2>/dev/null); age=$(( $(date +%s) - mtime )); [ \"$age\" -lt 1800 ] && exit 0; fi; printf '%s\\n' \"{\\\"decision\\\":\\\"block\\\",\\\"reason\\\":\\\"Before ending this session, write or update HANDOFF.md at $HANDOFF so work can be resumed if the session is killed. Include these sections: ## Current Task, ## Files Touched (path + role), ## Done (completed this session), ## In Progress (active edits, partial thoughts, hypotheses to test), ## Next Step (the exact next action). Overwrite the whole file each time — it is a snapshot, not a log. After writing, stop normally; the hook will see the fresh mtime and let you stop.\\\"}\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); SID=$(echo \"$INPUT\" | jq -r .session_id 2>/dev/null); PROJ_DIR=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; SLUG=$(echo \"$PROJ_DIR\" | tr / -); SRC=\"$HOME/.claude/projects/$SLUG/$SID.jsonl\"; DST_DIR=\"$PROJ_DIR/.session-archive\"; mkdir -p \"$DST_DIR\"; [ -f \"$SRC\" ] && cp \"$SRC\" \"$DST_DIR/$SID.jsonl\" 2>/dev/null; exit 0"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); SID=$(echo \"$INPUT\" | jq -r .session_id 2>/dev/null); PROJ_DIR=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; SLUG=$(echo \"$PROJ_DIR\" | tr / -); SRC=\"$HOME/.claude/projects/$SLUG/$SID.jsonl\"; DST_DIR=\"$PROJ_DIR/.session-archive\"; mkdir -p \"$DST_DIR\"; [ -f \"$SRC\" ] && cp \"$SRC\" \"$DST_DIR/$(date +%Y%m%d-%H%M%S)-precompact-$SID.jsonl\" 2>/dev/null; exit 0"
+          },
+          {
+            "type": "agent",
+            "prompt": "The conversation is about to be compacted. Before the compaction summary is generated, refresh ${CLAUDE_PROJECT_DIR:-/workspace}/HANDOFF.md so no critical state is lost in summarization.\n\nRead the session transcript at $HOME/.claude/projects/-workspace/<latest session-id>.jsonl (pick the jsonl file with the newest mtime in that directory). From it, extract and OVERWRITE HANDOFF.md with these sections:\n\n## Current Task — one paragraph: what is actively being worked on and why.\n\n## Files Touched — bullet list of (absolute path, role, version/commit if applicable).\n\n## Done — commits pushed this session (short SHA + one-line why). Include verified outcomes like 'v2.77 stable for 4 h'.\n\n## In Progress — hypotheses under test, specific file paths + line numbers being investigated, any secrets the user shared (name + where stored, NEVER the value), and scheduled wakeups with their trigger times.\n\n## Next Step — single exact next action to take. If waiting on the user, state what we're waiting for.\n\nBe terse but specific. A reader who hasn't seen the conversation must be able to resume work. Overwrite, don't append. After writing, exit."
+          }
+        ]
+      }
+    ]
+  }
+}

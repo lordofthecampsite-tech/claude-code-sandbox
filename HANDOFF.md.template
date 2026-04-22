@@ -1,0 +1,29 @@
+# Project Handoff
+
+_Overwrite this file at the end of every session with a fresh snapshot of where things stand. The Stop hook in `.claude/settings.json` enforces freshness (blocks session end if this file is >30 min old). A reader who has never seen your conversation should be able to resume work from this file alone._
+
+_Copy this template to `HANDOFF.md` (without the `.template` suffix) the first time. After that, `/setup` or any edit will keep it fresh._
+
+## Current Task
+
+_One paragraph: what is actively being worked on and why it matters. If a user conversation led here, capture the reasoning, not just the instruction._
+
+## Files Touched
+
+_Bullet list of (absolute path, role, version / commit if applicable). Mention both committed changes and still-staged or still-dirty edits._
+
+- `path/to/file.ext` — role, status
+
+## Done
+
+_Commits pushed this session, latest first. Short SHA + one-line why. Include any verified outcomes (e.g. "v0.3.7 stable for 4 h on site")._
+
+- `abc1234` — short description
+
+## In Progress
+
+_What's open. Mid-edits, partial thoughts, hypotheses to test. Specific file paths + line numbers being investigated. Scheduled wakeups with their trigger times. Secrets the user shared — name + where stored, NEVER the value._
+
+## Next Step
+
+_The single exact next action to take. If waiting on the user, state what we're waiting for._

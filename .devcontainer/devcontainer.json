@@ -1,0 +1,100 @@
+// Claude Code Sandbox — VS Code dev-container definition.
+//
+// Builds from ./Dockerfile. Grants NET_ADMIN so the container can install
+// its own iptables/dnsmasq firewall. Default out-of-the-box only reaches
+// what Claude Code itself needs — see .devcontainer/init-firewall.sh for
+// the allowlist.
+//
+// To customize for your project, run `/setup` inside Claude Code or edit
+// the sections marked "Examples — delete or replace" in this file and
+// the Dockerfile.
+{
+  "name": "Claude Code Sandbox",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "TZ": "${localEnv:TZ:America/Los_Angeles}",
+      "CLAUDE_CODE_VERSION": "latest",
+      "GIT_DELTA_VERSION": "0.18.2",
+      "ZSH_IN_DOCKER_VERSION": "1.2.0"
+    }
+  },
+  "runArgs": [
+    // NET_ADMIN + NET_RAW are required for the container to manipulate
+    // iptables / ipset for its own firewall. Both are scoped to the
+    // container — they don't affect the host.
+    "--cap-add=NET_ADMIN",
+    "--cap-add=NET_RAW"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "bash": { "path": "bash", "icon": "terminal-bash" },
+          "zsh": { "path": "zsh" }
+        }
+      }
+    }
+  },
+  "remoteUser": "node",
+  "mounts": [
+    // Persist shell history across rebuilds.
+    "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
+    // Persist Claude Code's config + session archive across rebuilds.
+    // This is where HANDOFF.md's backup jsonls land via the Stop hook.
+    "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume"
+
+    // --------------------------------------------------------------------
+    // Examples — uncomment + rename for your project:
+    //
+    // Arduino/ESP32 toolchain (keeps ~200 MB out of the image):
+    //   ,"source=mysketch-arduino-data,target=/home/node/.arduino15,type=volume"
+    //   ,"source=mysketch-arduino-cache,target=/home/node/.cache/arduino,type=volume"
+    //
+    // Python pip cache:
+    //   ,"source=myproj-pip-cache,target=/home/node/.cache/pip,type=volume"
+    //
+    // Go module cache:
+    //   ,"source=myproj-gomod,target=/home/node/go/pkg/mod,type=volume"
+    //
+    // Rust cargo cache:
+    //   ,"source=myproj-cargo,target=/home/node/.cargo,type=volume"
+    // --------------------------------------------------------------------
+  ],
+  "containerEnv": {
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+    "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
+  },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+  "workspaceFolder": "/workspace",
+
+  // Runs once on first create. Good place for toolchain setup that
+  // depends on mounted volumes (i.e. belongs here, not in the Dockerfile).
+  //
+  // Default: no-op. Examples of what you might put here, per your project:
+  //   - "arduino-cli config init --overwrite && arduino-cli core install esp32:esp32"
+  //   - "pipx install poetry && poetry install"
+  //   - "go mod download"
+  //   - "cargo fetch"
+  // "postCreateCommand": "",
+
+  // Runs on every container start. The firewall rules are not persisted
+  // in the container (iptables is kernel-level), so we re-apply them each
+  // time. Keep this. Add additional init here only if you know you want
+  // it re-run every start.
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  "waitFor": "postStartCommand"
+}
