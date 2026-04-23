@@ -249,6 +249,20 @@ if [ -n "$HOST_NETWORK" ]; then
     iptables -A INPUT -s "$HOST_NETWORK" -j ACCEPT
 fi
 
+# Docker Desktop host-gateway (host.docker.internal — service on the Mac).
+# Docker Desktop puts the host on a separate /24 from the bridge default
+# route, so HOST_NETWORK above doesn't cover it. Resolve at firewall-start
+# time since the IP varies by Docker Desktop version. If --add-host=
+# host.docker.internal:host-gateway isn't set in devcontainer.json runArgs
+# (or on non-Desktop Docker), getent returns empty and this block skips.
+# See .devcontainer/FIXES.md §2.
+HOST_GATEWAY_IP=$(getent ahostsv4 host.docker.internal | awk 'NR==1{print $1}')
+if [ -n "$HOST_GATEWAY_IP" ]; then
+    echo "Host gateway (host.docker.internal): $HOST_GATEWAY_IP"
+    iptables -A OUTPUT -d "$HOST_GATEWAY_IP" -j ACCEPT
+    iptables -A INPUT  -s "$HOST_GATEWAY_IP" -j ACCEPT
+fi
+
 # ============================================================================
 # Example: LAN access — uncomment if you need the container to reach
 # devices on your home / office LAN (e.g. local dev servers, IoT boards,

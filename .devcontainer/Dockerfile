@@ -117,6 +117,13 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   -x
 
+# zsh-in-docker injects `export LANG='en_US.UTF-8'` (+ LC_ALL, LANGUAGE) at
+# the top of ~/.zshrc, but the Debian base image only generates C.UTF-8 —
+# so glibc errors on every command and UTF-8 widths miscompute. Strip those
+# lines so containerEnv's LANG=C.UTF-8 in /etc/environment stays authoritative.
+# See .devcontainer/FIXES.md §1.
+RUN sed -i -E "/^export (LANG|LC_ALL|LANGUAGE)=.*en_US/d" /home/node/.zshrc
+
 # Claude Code CLI. Kept as the last install so frequent Claude updates
 # don't invalidate layer cache for anything above.
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}

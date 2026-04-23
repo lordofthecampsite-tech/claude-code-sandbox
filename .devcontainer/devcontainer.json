@@ -24,7 +24,13 @@
     // iptables / ipset for its own firewall. Both are scoped to the
     // container — they don't affect the host.
     "--cap-add=NET_ADMIN",
-    "--cap-add=NET_RAW"
+    "--cap-add=NET_RAW",
+    // Map host.docker.internal → host gateway so the container can reach
+    // services running on the Mac/Linux host (databases, brokers, APIs).
+    // init-firewall.sh opens the resolved host-gateway IP explicitly —
+    // it's on a separate /24 from the bridge default route on Docker
+    // Desktop, so the HOST_NETWORK rule below does NOT cover it.
+    "--add-host=host.docker.internal:host-gateway"
   ],
   "customizations": {
     "vscode": {
@@ -76,7 +82,15 @@
   "containerEnv": {
     "NODE_OPTIONS": "--max-old-space-size=4096",
     "CLAUDE_CONFIG_DIR": "/home/node/.claude",
-    "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
+    "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
+    // en_US.UTF-8 is NOT generated in the Debian base image, so glibc
+    // falls back to C and wcwidth miscomputes column widths — UTF-8
+    // output renders misaligned and styled spans overlap. C.UTF-8 is the
+    // only UTF-8 locale actually installed. See .devcontainer/FIXES.md §1.
+    // xterm-256color unlocks 256 colors for TUI tools.
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "TERM": "xterm-256color"
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
