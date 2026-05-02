@@ -1,5 +1,5 @@
 {
-  "_comment": "Project-level Claude Code settings shipped with the template. Three hooks enforce the session-durability habits: (1) Stop blocks if HANDOFF.md is stale, forcing a resume-snapshot every session; (2) Stop archives the raw session jsonl into .session-archive/ so full-fidelity history survives; (3) PreCompact mirrors the archive and asks Claude to refresh HANDOFF.md before auto-compaction summarizes the conversation away. Delete any hook you don't want, but at least keep the HANDOFF one — it is the single most load-bearing habit in this template.",
+  "_comment": "Project-level Claude Code settings shipped with the template. Four hooks enforce session-durability habits: (1) Stop blocks if HANDOFF.md is stale, forcing a resume-snapshot every session; (2) Stop archives the raw session jsonl into .session-archive/ so full-fidelity history survives; (3) PreCompact mirrors the archive and asks Claude to refresh HANDOFF.md before auto-compaction summarizes the conversation away; (4) PostCompact re-injects HANDOFF.md (and any other critical state your project adds) as additionalContext after compaction, so the freshly compacted model immediately knows what was being worked on. Delete any hook you don't want, but at least keep the HANDOFF Stop hook — it is the single most load-bearing habit in this template.",
   "hooks": {
     "Stop": [
       {
@@ -27,8 +27,18 @@
             "command": "INPUT=$(cat); SID=$(echo \"$INPUT\" | jq -r .session_id 2>/dev/null); PROJ_DIR=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; SLUG=$(echo \"$PROJ_DIR\" | tr / -); SRC=\"$HOME/.claude/projects/$SLUG/$SID.jsonl\"; DST_DIR=\"$PROJ_DIR/.session-archive\"; mkdir -p \"$DST_DIR\"; [ -f \"$SRC\" ] && cp \"$SRC\" \"$DST_DIR/$(date +%Y%m%d-%H%M%S)-precompact-$SID.jsonl\" 2>/dev/null; exit 0"
           },
           {
-            "type": "agent",
-            "prompt": "The conversation is about to be compacted. Before the compaction summary is generated, refresh ${CLAUDE_PROJECT_DIR:-/workspace}/HANDOFF.md so no critical state is lost in summarization.\n\nRead the session transcript at $HOME/.claude/projects/-workspace/<latest session-id>.jsonl (pick the jsonl file with the newest mtime in that directory). From it, extract and OVERWRITE HANDOFF.md with these sections:\n\n## Current Task — one paragraph: what is actively being worked on and why.\n\n## Files Touched — bullet list of (absolute path, role, version/commit if applicable).\n\n## Done — commits pushed this session (short SHA + one-line why). Include verified outcomes like 'v2.77 stable for 4 h'.\n\n## In Progress — hypotheses under test, specific file paths + line numbers being investigated, any secrets the user shared (name + where stored, NEVER the value), and scheduled wakeups with their trigger times.\n\n## Next Step — single exact next action to take. If waiting on the user, state what we're waiting for.\n\nBe terse but specific. A reader who hasn't seen the conversation must be able to resume work. Overwrite, don't append. After writing, exit."
+            "type": "command",
+            "command": "PROJ=\"${CLAUDE_PROJECT_DIR:-/workspace}\"; SLUG=$(echo \"$PROJ\" | tr / -); SESS_DIR=\"$HOME/.claude/projects/$SLUG\"; LATEST=$(ls -t \"$SESS_DIR\"/*.jsonl 2>/dev/null | head -1); [ -z \"$LATEST\" ] && exit 0; timeout 240 claude -p --permission-mode bypassPermissions --allowedTools 'Read Write Bash' --model sonnet --no-session-persistence \"You are a PreCompact hook. Refresh $PROJ/HANDOFF.md before this conversation gets compacted, so no critical state is lost in summarization. Read the session transcript at $LATEST (large file; use Read with offset/limit if needed). Overwrite (do not append) $PROJ/HANDOFF.md with these sections: ## Current Task (one paragraph: what is actively being worked on and why). ## Files Touched (bullet list of absolute path + role + version/commit if applicable). ## Done (commits pushed this session: short SHA + one-line why; include verified outcomes like 'v2.77 stable for 4 h'). ## In Progress (hypotheses under test, specific file paths + line numbers, any secrets shared by name + storage location only NEVER the value, scheduled wakeups with their trigger times). ## Next Step (single exact next action; if waiting on the user, state what we're waiting for). Be terse but specific. A reader who hasn't seen the conversation must be able to resume work. After writing, exit.\" >/dev/null 2>&1 || true; exit 0"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR:-/workspace}/.claude/hooks/post-compact-restore.sh"
           }
         ]
       }
